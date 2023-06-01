@@ -20,14 +20,16 @@ class WithLossCell(nn.Cell):
     Outputs:
         Tensor, a tensor means the loss value, the shape of which is usually :math:`()`.
     """
-    def __init__(self, net, loss_fn):
+    def __init__(self, net, loss_fn, loss_weight):
         super(WithLossCell, self).__init__(auto_prefix=False)
         self.net = net
         self.loss_fn = loss_fn
+        self.loss_weight = loss_weight
 
     def construct(self, data, label):
         outs = self.net(data)
         loss = 0
-        for out in outs:
-            loss += self.loss_fn(out, label)
+        for i, out in enumerate(outs):
+            out = ops.interpolate(out, label.shape[-2:], mode="bilinear")
+            loss += self.loss_weight[i] * self.loss_fn(out, label)
         return loss

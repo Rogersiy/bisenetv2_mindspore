@@ -1,6 +1,13 @@
 import math
+import mindspore as ms
 from mindspore.common.initializer import HeUniform
 from mindspore import ops, nn
+
+
+def get_bn():
+    if ms.get_auto_parallel_context("device_num") > 1 and ms.get_context("device_target") == "Ascend":
+        return nn.SyncBatchNorm
+    return nn.BatchNorm2d
 
 
 class ConvModule(nn.Cell):
@@ -21,7 +28,7 @@ class ConvModule(nn.Cell):
                                 group=groups, pad_mode="pad", padding=padding, has_bias=bias,
                                 weight_init=HeUniform(math.sqrt(5))))
         if norm == "bn":
-            layers.append(nn.BatchNorm2d(out_channels, eps=1e-4))
+            layers.append(get_bn()(out_channels, eps=1e-4))
         elif norm != 'none':
             raise ValueError(f"not support norm: {norm}, you can set norm None or 'bn'")
         if act != 'none':
@@ -105,7 +112,8 @@ class FCNHead(nn.Cell):
                 act=act)
         if out_channels is None:
             out_channels = num_classes
-        self.conv_seg = nn.Conv2d(channels, out_channels, kernel_size=1, weight_init=HeUniform(math.sqrt(5)))
+        self.conv_seg = nn.Conv2d(channels, out_channels, kernel_size=1,
+                                  weight_init=HeUniform(math.sqrt(5)), has_bias=True)
 
     def _forward_feature(self, inputs):
         """Forward function for feature maps before classifying each pixel with

@@ -164,7 +164,7 @@ class SelfAttentionBlock(nn.Cell):
 
         context = ops.matmul(sim_map, value)
         context = context.transpose((0, 2, 1))
-        context = context.reshape((batch_size, -1, *query_feats.shape[2:]))
+        context = context.reshape((batch_size, -1, query_feats.shape[2], query_feats.shape[3]))
         if self.out_project is not None:
             context = self.out_project(context)
         return context
@@ -248,7 +248,8 @@ class OCRHead(nn.Cell):
             act=act)
         if out_channels is None:
             self.out_channels = num_classes
-        self.conv_seg = nn.Conv2d(ocr_channels, self.out_channels, kernel_size=1, weight_init=HeUniform(math.sqrt(5)))
+        self.conv_seg = nn.Conv2d(ocr_channels, self.out_channels, kernel_size=1,
+                                  weight_init=HeUniform(math.sqrt(5)), has_bias=True)
         self.in_index = in_index
         self.align_corners = align_corners
 
@@ -299,16 +300,16 @@ class OCRNet(nn.Cell):
                                 in_index=cfg.fcn_head.in_index,
                                 norm=cfg.fcn_head.norm,
                                 act=cfg.fcn_head.act)
-        self.ocr_net = OCRHead(in_channels=cfg.ocr_head.in_channels,
-                               channels=cfg.ocr_head.channels,
-                               num_classes=cfg.num_classes,
-                               in_index=cfg.ocr_head.in_index,
-                               ocr_channels=cfg.ocr_head.ocr_channels,
-                               norm=cfg.ocr_head.norm,
-                               act=cfg.ocr_head.act)
+        self.ocr_head = OCRHead(in_channels=cfg.ocr_head.in_channels,
+                                channels=cfg.ocr_head.channels,
+                                num_classes=cfg.num_classes,
+                                in_index=cfg.ocr_head.in_index,
+                                ocr_channels=cfg.ocr_head.ocr_channels,
+                                norm=cfg.ocr_head.norm,
+                                act=cfg.ocr_head.act)
 
     def construct(self, img):
         feats = self.backbone(img)
         fcn_out = self.fcn_head(feats)
-        ocr_out = self.ocr_net(feats, fcn_out)
-        return fcn_out, ocr_out
+        ocr_out = self.ocr_head(feats, fcn_out)
+        return ocr_out, fcn_out

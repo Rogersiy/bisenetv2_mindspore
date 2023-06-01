@@ -78,9 +78,8 @@ class RandomResizeCrop:
         self.ignore_label = ignore_label
         self.multi_scale = multi_scale
 
-    def multi_scale_aug(self, image, label=None):
+    def multi_scale_aug(self, image, label=None, rand_scale=1.0):
         """Augment feature into different scales."""
-        rand_scale = 0.5 + np.random.randint(0, self.scale_factor) / 10.0
         long_size = np.int(self.base_size * rand_scale + 0.5)
         h, w, _ = image.shape
         if h > w:
@@ -115,16 +114,18 @@ class RandomResizeCrop:
         label = self.pad_image(label, self.crop_size, (self.ignore_label,))
 
         new_h, new_w = label.shape
-        x = np.random.randint(0, new_w - self.crop_size[1])
-        y = np.random.randint(0, new_h - self.crop_size[0])
+        x = np.random.randint(0, new_w - self.crop_size[1]) if new_w - self.crop_size[1] > 0 else 0
+        y = np.random.randint(0, new_h - self.crop_size[0]) if new_h - self.crop_size[0] > 0 else 0
         image = image[y:y + self.crop_size[0], x:x + self.crop_size[1]]
         label = label[y:y + self.crop_size[0], x:x + self.crop_size[1]]
 
         return image, label
 
     def __call__(self, img, label):
+        label = np.squeeze(label)
         if self.multi_scale:
-            img, label = self.multi_scale_aug(img, label)
+            rand_scale = 0.5 + np.random.randint(0, self.scale_factor) / 10.0
+            img, label = self.multi_scale_aug(img, label, rand_scale)
 
         img, label = self.rand_crop(img, label)
         if self.downsample_rate != 1:

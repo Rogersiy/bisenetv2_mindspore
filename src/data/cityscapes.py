@@ -1,3 +1,4 @@
+import numpy as np
 from mindspore import dataset as ds
 
 
@@ -6,8 +7,10 @@ def citycapes_dataset(dataset_dir, map_label=True, ignore_label=255, group_size=
     dataset = ds.CityscapesDataset(dataset_dir=dataset_dir, usage=usage, task="semantic", decode=True,
                                    num_shards=group_size, shard_id=rank, shuffle=is_train)
     if map_label:
-        def convert_label(label, inverse=False):
+        def convert_label(image, label, inverse=False):
             """Convert classification ids in labels."""
+            if len(label.shape) == 3:
+                label = label[:, :, 0]
             temp = label.copy()
             if inverse:
                 for v, k in label_mapping.items():
@@ -15,7 +18,8 @@ def citycapes_dataset(dataset_dir, map_label=True, ignore_label=255, group_size=
             else:
                 for k, v in label_mapping.items():
                     label[temp == k] = v
-            return label
+            image_shape = np.array(image.shape[:2])
+            return image, image_shape, label
 
         label_mapping = {-1: ignore_label, 0: ignore_label,
                          1: ignore_label, 2: ignore_label,
@@ -29,5 +33,8 @@ def citycapes_dataset(dataset_dir, map_label=True, ignore_label=255, group_size=
                          25: 12, 26: 13, 27: 14, 28: 15,
                          29: ignore_label, 30: ignore_label,
                          31: 16, 32: 17, 33: 18}
-        dataset = dataset.map(operations=convert_label, input_columns=["task"], output_columns=["label"])
+        dataset = dataset.map(operations=convert_label,
+                              input_columns=["image", "task"],
+                              output_columns=["image", "ori_shape", "label"],
+                              python_multiprocessing=True)
     return dataset

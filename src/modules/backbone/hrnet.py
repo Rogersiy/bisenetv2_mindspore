@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import mindspore as ms
 from mindspore import ops, nn
-
+from ..base_modules import get_bn
 
 __all__ = ["HRNet", "hrnet_w32", "hrnet_w48"]
 
@@ -52,7 +52,7 @@ class BasicBlock(nn.Cell):
     ) -> None:
         super().__init__()
         if norm is None:
-            norm = nn.BatchNorm2d
+            norm = get_bn()
         assert groups == 1, "BasicBlock only supports groups=1"
         assert base_width == 64, "BasicBlock only supports base_width=64"
 
@@ -108,7 +108,7 @@ class Bottleneck(nn.Cell):
     ) -> None:
         super().__init__()
         if norm is None:
-            norm = nn.BatchNorm2d
+            norm = get_bn()
 
         width = int(channels * (base_width / 64.0)) * groups
 
@@ -224,7 +224,7 @@ class HRModule(nn.Cell):
                     kernel_size=1,
                     stride=stride,
                 ),
-                nn.BatchNorm2d(num_channels[branch_index] * block.expansion),
+                get_bn()(num_channels[branch_index] * block.expansion),
             )
 
         layers = []
@@ -275,7 +275,7 @@ class HRModule(nn.Cell):
                             nn.Conv2d(
                                 num_inchannels[j], num_inchannels[i], kernel_size=1
                             ),
-                            nn.BatchNorm2d(num_inchannels[i]),
+                            get_bn()(num_inchannels[i]),
                         )
                     )
                 elif j == i:
@@ -295,7 +295,7 @@ class HRModule(nn.Cell):
                                         padding=1,
                                         pad_mode="pad",
                                     ),
-                                    nn.BatchNorm2d(num_outchannels_conv3x3),
+                                    get_bn()(num_outchannels_conv3x3),
                                 )
                             )
                         else:
@@ -310,7 +310,7 @@ class HRModule(nn.Cell):
                                         padding=1,
                                         pad_mode="pad",
                                     ),
-                                    nn.BatchNorm2d(num_outchannels_conv3x3),
+                                    get_bn()(num_outchannels_conv3x3),
                                     nn.ReLU(),
                                 )
                             )
@@ -377,11 +377,11 @@ class HRNet(nn.Cell):
         self.conv1 = nn.Conv2d(
             in_channels, 64, kernel_size=3, stride=2, padding=1, pad_mode="pad"
         )
-        self.bn1 = nn.BatchNorm2d(64)
+        self.bn1 = get_bn()(64)
         self.conv2 = nn.Conv2d(
             64, 64, kernel_size=3, stride=2, padding=1, pad_mode="pad"
         )
-        self.bn2 = nn.BatchNorm2d(64)
+        self.bn2 = get_bn()(64)
         self.relu = nn.ReLU()
 
         # stage 1
@@ -471,7 +471,7 @@ class HRNet(nn.Cell):
                     pad_mode="pad",
                     padding=1,
                 ),
-                nn.BatchNorm2d(out_channels),
+                get_bn()(out_channels),
                 nn.ReLU(),
             )
 
@@ -486,7 +486,7 @@ class HRNet(nn.Cell):
                 stride=1,
                 padding=0,
             ),
-            nn.BatchNorm2d(2048),
+            get_bn()(2048),
             nn.ReLU(),
         )
 
@@ -512,7 +512,7 @@ class HRNet(nn.Cell):
                                 padding=1,
                                 pad_mode="pad",
                             ),
-                            nn.BatchNorm2d(num_channels_cur_layer[i]),
+                            get_bn()(num_channels_cur_layer[i]),
                             nn.ReLU(),
                         )
                     )
@@ -540,7 +540,7 @@ class HRNet(nn.Cell):
                                     padding=1,
                                     pad_mode="pad",
                                 ),
-                                nn.BatchNorm2d(outchannels),
+                                get_bn()(outchannels),
                                 nn.ReLU(),
                             ]
                         )
@@ -567,7 +567,7 @@ class HRNet(nn.Cell):
                     kernel_size=1,
                     stride=stride,
                 ),
-                nn.BatchNorm2d(out_channels * block.expansion),
+                get_bn()(out_channels * block.expansion),
             )
 
         layers = []

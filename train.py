@@ -20,7 +20,7 @@ def get_args_train(parents=None):
     parser = argparse.ArgumentParser(description='Train', parents=[parents] if parents else [])
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parser.add_argument("--config", type=str,
-                        default=os.path.join(current_dir,"config/config_ocrnet_hrw48.yml"),
+                        default=os.path.join(current_dir, "config/ocrnet/config_ocrnet_hrw48.yml"),
                         help="Config file path")
     parser.add_argument('--seed', type=int, default=1234, help='runtime seed')
     parser.add_argument('--ms_mode', type=int, default=0,
@@ -36,7 +36,7 @@ def get_args_train(parents=None):
     parser.add_argument('--force_update', type=ast.literal_eval, default=False, help='force update')
     parser.add_argument('--eval_parallel', type=ast.literal_eval, default=True, help='run eval')
     parser.add_argument('--log_interval', type=int, default=100, help='log interval')
-    parser.add_argument('--lr_init', type=float, default=0.02, help='base learning rate')
+    parser.add_argument('--lr_init', type=float, default=0.01, help='base learning rate')
     parser.add_argument('--save_dir', type=str, default="output", help='save dir')
 
     # profiling
@@ -86,13 +86,13 @@ def get_optimizer(cfg, params, lr):
         weight_decay = 0.0
 
     if cfg.type in ["momentum", "sgd"]:
-        opt = nn.Momentum(params, lr, momentum=cfg.momentum, weight_decay=weight_decay, nesterov=cfg.nesterov)
+        opt = nn.Momentum(params, lr, momentum=cfg.momentum, weight_decay=weight_decay, use_nesterov=cfg.nesterov)
         return opt
     raise ValueError(f"Not support {cfg.type}")
 
 
 def train(cfg, network, dataset, eval_dataset=None):
-
+    logger.info("Start Train")
     model = ms.Model(train_net)
     epochs = cfg.total_step // cfg.log_interval
     model.train(epochs, dataset, callbacks=Callback(cfg, network, optimizer, eval_dataset),
@@ -111,6 +111,7 @@ if __name__ == '__main__':
 
     # Dataset
     dataloader, steps_per_epoch = create_dataset(config.data,
+                                                 batch_size=config.batch_size,
                                                  num_parallel_workers=config.data.num_parallel_workers,
                                                  group_size=config.rank_size,
                                                  rank=config.rank,
@@ -120,21 +121,16 @@ if __name__ == '__main__':
 
     # Network
     network = OCRNet(config)
-    network.to_float(ms.float32)
     if config.mix:
-        network.backbone.to_float(ms.float16)
-        network.fcn_head.to_float(ms.float16)
-        for _, cell in network.cells_and_names():
-            if isinstance(cell, (nn.Dense)):
-                cell.to_float(ms.float16)
+        network.to_float(ms.float16)
+
     loss_fn = CrossEntropy(num_classes=config.num_classes,
                            ignore_label=config.data.ignore_label,
                            cls_weight=config.data.map_label).to_float(ms.float32)
-    net_with_loss = WithLossCell(network, loss_fn)
+    net_with_loss = WithLossCell(network, loss_fn, config.loss_weight)
 
     # Optimizer
-    total_step = (config.total_step // steps_per_epoch + 1) * steps_per_epoch
-    lr = get_lr(config.lr_init, 1e-6, config.warmup_step, total_step)
+    lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
     optimizer = get_optimizer(config.optimizer, net_with_loss.trainable_params(), lr)
     scale_sense = nn.FixedLossScaleUpdateCell(1.0)
     if config.ms_loss_scaler == 'dynamic':
@@ -143,22 +139,12 @@ if __name__ == '__main__':
                                                     scale_window=config.get('scale_window', 2000))
     elif config.ms_loss_scaler == 'static':
         scale_sense = nn.FixedLossScaleUpdateCell(config.get('ms_loss_scaler_value', 2 ** 10))
-    train_net = TrainOneStepCell(network, optimizer, scale_sense,
+    train_net = TrainOneStepCell(net_with_loss, optimizer, scale_sense,
                                  clip_grad=config.clip_grad, force_update=config.force_update)
 
     if os.path.exists(config.pre_trained_ckpt):
         ms.load_checkpoint(config.pre_trained_ckpt, train_net)
         logger.info(f"success to load pretrained ckpt {config.pre_trained_ckpt}")
-
-
-    # if config.run_eval:
-    #     eval_dataloader, _ = create_dataloader(data_config=config.data,
-    #                                            task='eval',
-    #                                            per_batch_size=1,
-    #                                            rank=config.rank, rank_size=config.rank_size,
-    #                                            shuffle=False, drop_remainder=False,
-    #                                            num_parallel_worker=1)
-
     try:
         train(config, network, dataloader, eval_dataloader)
     except:

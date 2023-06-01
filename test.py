@@ -1,31 +1,23 @@
-import time
 import numpy as np
 import mindspore as ms
-from src.modules.ocrnet import OCRNet
-from src.utils.config import load_config, Config, merge
-from src.data import create_dataset
+from mindspore import ops, nn
 
+def nms(bbox, threshold):
+    box = bbox[:, :4]
+    n = box.shape[0]
+    iou_mask = ops.iou(box, box) < threshold
+    range = ms.numpy.arange(n)
+    metri = ops.tile(range.reshape((1, n)), (n, 1))
+    mask = metri > range.reshape(n,1)
+    print(ops.iou(box, box))
+    print(iou_mask)
+    print(mask)
+    mask = ops.logical_and(mask, iou_mask).astype(range.dtype)
+    return ops.reduce_sum(mask, 0) == range
 
-if __name__ == '__main__':
-    config, helper, choices = load_config("config/ocrnet/config_ocrnet_hrw48.yml")
-    config = Config(config)
-    net = OCRNet(config)
+xy = np.random.uniform(0, 20, (10, 2))
+wh = np.random.uniform(0, 10, (10, 2))
 
-    img = ms.Tensor(np.random.uniform(-1, 1, (2, 3, 1280, 768)), ms.float32)
-    fcn_out, ocr_out = net(img)
-    print(fcn_out.shape, ocr_out.shape)
-    config.batch_size = 2
-    dataloader, steps_per_epoch = create_dataset(config.data,
-                                                 num_parallel_workers=config.data.num_parallel_workers,
-                                                 group_size=1,
-                                                 rank=0,
-                                                 task="train")
-    print("steps_per_epoch", steps_per_epoch)
-    s = time.time()
-    for i, data in enumerate(dataloader.create_dict_iterator(output_numpy=True)):
-        if i == 0:
-            print(data["image"].shape, data["label"].shape)
-        elif i == 5:
-            s = time.time()
-        elif i == 55:
-            print("avg time", (time.time() - s) / 50 * 1000)
+bbox = ms.Tensor(np.concatenate((xy, xy + wh), -1), ms.float32)
+print(bbox)
+print(nms(bbox, 0.05))

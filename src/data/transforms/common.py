@@ -1,8 +1,7 @@
-import copy
 import cv2
 import numpy as np
 
-__all__ = ['RandomFlip', 'RandomHSV', 'Normalize', 'TransposeImage']
+__all__ = ['RandomFlip', 'RandomColor', 'RandomHSV', 'Normalize', 'TransposeImage']
 
 
 class RandomFlip:
@@ -21,6 +20,51 @@ class RandomFlip:
             img = cv2.flip(img, 1)
             label = cv2.flip(label, 1)
 
+        return img, label
+
+
+class RandomColor:
+    """
+    Randomly adjust the brightness, contrast, saturation, and hue of the input image.
+    """
+    def __init__(self, brightness_delta=32, contrast_range=(0.5, 1.5), saturation_range=(0.5, 1.5), hue_delta=18):
+        self.brightness_delta = brightness_delta
+        self.contrast_range = contrast_range
+        self.saturation_range = saturation_range
+        self.hue_delta = hue_delta
+
+    def convert(self, img, alpha=1, beta=0):
+        """Multiple with alpha and add beat with clip."""
+
+        img = img.astype(np.float32) * alpha + beta
+        img = np.clip(img, 0, 255)
+        return img.astype(np.uint8)
+
+    def __call__(self, img, label):
+        brightness_r = np.random.random() < 0.5
+        contrast_r = np.random.random() < 0.5
+        saturation_r = np.random.random() < 0.5
+        hue_r = np.random.random() < 0.5
+
+        if brightness_r:
+            img = self.convert(img, beta=np.random.uniform(-self.brightness_delta,
+                                                           self.brightness_delta))
+        mode = np.random.randint(2)
+        # mode == 0 --> do random contrast first
+        # mode == 1 --> do random contrast last
+        if mode == 1 and contrast_r:
+            img = self.convert(img, alpha=np.random.uniform(*self.contrast_range))
+        if saturation_r or hue_r:
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+            if saturation_r:
+                img_hsv[:, :, 1] = self.convert(img_hsv[:, :, 1],
+                                                alpha=np.random.uniform(*self.contrast_range))
+            if hue_r:
+                img_hsv[:, :, 0] = (img_hsv[:, :, 0].astype(int) +
+                                    np.random.randint(-self.hue_delta, self.hue_delta)) % 180
+            img = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
+        if mode == 0 and contrast_r:
+            img = self.convert(img, alpha=np.random.uniform(*self.contrast_range))
         return img, label
 
 

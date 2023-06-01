@@ -10,11 +10,12 @@ class CrossEntropy(nn.LossBase):
 
     def __init__(self, num_classes=19, ignore_label=255, cls_weight=None):
         super(CrossEntropy, self).__init__()
+        self.num_classes = num_classes
         weight = ms.Tensor([1.0] * num_classes, ms.float32)
         self.ignore_label = ignore_label
         if cls_weight is not None:
             weight = ms.Tensor(cls_weight, ms.float32)
-        self.ce = nn.CrossEntropyLoss(weight=weight, ignore_index=ignore_label, reduction='mean', label_smoothing=0.1)
+        self.ce = nn.CrossEntropyLoss(weight=weight, ignore_index=ignore_label, reduction='mean')
 
     def construct(self, logits, labels):
         """Loss construction."""

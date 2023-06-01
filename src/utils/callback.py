@@ -28,7 +28,6 @@ class Callback(ms.Callback):
 
     def on_train_epoch_end(self, run_context):
         cb_params = run_context.original_args()
-        cur_epoch_num = (cb_params.get("cur_epoch_num", 1) // self.cfg.print_pre_epoch) + 1
         cur_step = cb_params.get("cur_epoch_num", 1) * self.cfg.log_interval
         loss, cond, scaling_sens = cb_params.net_outputs
         step = self.optimizer.global_step
@@ -36,8 +35,7 @@ class Callback(ms.Callback):
             cur_lr = self.optimizer.learning_rate(step - 1)[0].asnumpy()
         else:
             cur_lr = self.optimizer.learning_rate.asnumpy()
-        logger.info(f"Epoch {cur_epoch_num}/{self.cfg.epochs}, "
-                    f"step {cur_step % self.cfg.steps_per_epoch}/{self.cfg.steps_per_epoch}, "
+        logger.info(f"step {cur_step}/{self.cfg.total_step}, "
                     f"loss: {loss.asnumpy():.4f}, "
                     f"cond: {cond.asnumpy()}, "
                     f"scaling_sens: {scaling_sens.asnumpy()}, "
@@ -48,7 +46,7 @@ class Callback(ms.Callback):
             self.profiler.stop()
             self.profiler.analyse()
             run_context.request_stop()
-        if cb_params.get("cur_epoch_num", 1) % self.cfg.print_pre_epoch == 0:
-            save_checkpoint(self.cfg, self.network, self.optimizer, cur_epoch_num)
+        if cur_step % 5000 == 0 and cur_step != 0:
+            save_checkpoint(self.cfg, self.network, self.optimizer, cur_step)
             # if self.cfg.run_eval and cur_epoch_num > self.cfg.epochs // 2:
             #     run_eval(self.cfg, self.network, self.eval_dataset, cur_epoch_num, cb_params.batch_num)

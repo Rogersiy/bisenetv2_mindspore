@@ -1,3 +1,4 @@
+import mindspore as ms
 from mindspore import ops, nn
 
 _grad_scale = ops.MultitypeFuncGraph("grad_scale")
@@ -14,7 +15,7 @@ class TrainOneStepCell(nn.TrainOneStepWithLossScaleCell):
     def __init__(self, network, optimizer, scale_sense, clip_grad=False, force_update=False):
         super(TrainOneStepCell, self).__init__(network, optimizer, scale_sense)
         self.clip_grad = clip_grad
-        self.force_update = force_update
+        self.force_update = ms.Tensor(force_update, ms.bool_)
 
     def construct(self, *inputs):
         weights = self.weights

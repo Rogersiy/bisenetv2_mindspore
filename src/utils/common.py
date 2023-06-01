@@ -6,11 +6,11 @@ from src.utils import logger
 from src.utils.local_adapter import get_rank_id, get_device_num, get_local_device_num
 
 
-def save_checkpoint(cfg, network, optimizer=None, epoch=0):
+def save_checkpoint(cfg, network, optimizer=None, cur_step=0):
     os.makedirs(os.path.join(cfg.save_dir, "checkpoints"), exist_ok=True)
     save_path = os.path.join(cfg.save_dir,
                              "checkpoints",
-                             f"{cfg.net}_{cfg.backbone.initializer}_epoch{epoch}_rank{cfg.rank}.ckpt")
+                             f"{cfg.net}_{cfg.backbone.initializer}_{cur_step}_rank{cfg.rank}.ckpt")
     opt_path = os.path.join(cfg.save_dir, "checkpoints", f"optimizer_rank{cfg.rank}.ckpt")
     ms.save_checkpoint(network, save_path)
     if optimizer is not None:
@@ -18,7 +18,7 @@ def save_checkpoint(cfg, network, optimizer=None, epoch=0):
     if cfg.enable_modelarts:
         from src.utils.modelarts import sync_data
         sync_data(save_path, os.path.join(cfg.train_url, "checkpoints",
-                                          f"{cfg.net}_{cfg.backbone.initializer}_epoch{epoch}_rank{cfg.rank}.ckpt"))
+                                          f"{cfg.net}_{cfg.backbone.initializer}_{cur_step}_rank{cfg.rank}.ckpt"))
         sync_data(opt_path, os.path.join(cfg.train_url, "checkpoints", f"optimizer_rank{cfg.rank}.ckpt"))
 
 

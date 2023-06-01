@@ -11,4 +11,5 @@ def create_backbone(initializer, in_channels=3, pretrained=True, backbone_ckpt="
         raise ValueError(f"Invalid backbone: {initializer}")
     if pretrained:
         ms.load_checkpoint(backbone_ckpt, net)
+        print(f"load {backbone_ckpt}")
     return net
