@@ -1,18 +1,17 @@
 __BASE__: [
   '../cityscapes.yml',
   '../optimizer_8k.yml',
-  '../inference.yml'
 ]
 net: OCRNet
 num_classes: 19
 backbone:
     initializer: hrnet_w48
     pretrained: True
-    backbone_ckpt: "./hrnet_w48-2e3399cd.ckpt" # If on modelarts, set the name of checkpoint saved in data_url
+    backbone_ckpt: "" # If on modelarts, set the name of checkpoint saved in data_url
     in_channels: 3
 fcn_head:
-    in_channels: [48, 96, 192, 384]
-    channels: 270
+    in_channels: [32, 64, 128, 256]
+    channels: 480
     kernel_size: 1
     num_convs: 1
     concat_input: False
@@ -20,7 +19,7 @@ fcn_head:
     norm: "bn"
     act: "relu"
 ocr_head:
-    in_channels: [48, 96, 192, 384]
+    in_channels: [32, 64, 128, 256]
     channels: 512
     in_index: [0, 1, 2, 3]
     ocr_channels: 256

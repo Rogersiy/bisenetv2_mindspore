@@ -1,6 +1,6 @@
 from . import transforms
 
-__all__ = ['create_transform']
+__all__ = ["create_transform"]
 
 
 def create_transform(transform):
@@ -10,7 +10,6 @@ def create_transform(transform):
         single_img_transforms:
             - RandomFlip: {prob: 0.5}
             - RandomHSV: {}
-            - LetterBox: {target_size: 640}
     """
     for k, v in transform.items():
         op_cls = getattr(transforms, k)

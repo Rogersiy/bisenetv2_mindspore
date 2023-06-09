@@ -12,6 +12,7 @@ def tensor_grad_scale(scale, grad):
 
 class TrainOneStepCell(nn.TrainOneStepWithLossScaleCell):
     r"""Network training with loss scaling"""
+
     def __init__(self, network, optimizer, scale_sense, clip_grad=False, force_update=False):
         super(TrainOneStepCell, self).__init__(network, optimizer, scale_sense)
         self.clip_grad = clip_grad

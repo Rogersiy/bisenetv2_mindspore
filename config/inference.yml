@@ -1,7 +1,0 @@
-infer:
-  conf_threshold: 0.2
-  nms_threshold: 0.55
-  max_box_num: 300
-  predict_box_format: "xyxy"
-  eval_parallel: True
-  with_postprocess: True

@@ -4,7 +4,6 @@ import yaml
 import argparse
 import collections
 from copy import deepcopy
-from pprint import pformat
 
 try:
     collectionsAbc = collections.abc
@@ -16,6 +15,7 @@ class Config(dict):
     """
     Configuration namespace. Convert dictionary to members.
     """
+
     def __init__(self, cfg_dict):
         super(Config, self).__init__()
         for k, v in cfg_dict.items():
@@ -30,11 +30,30 @@ class Config(dict):
         else:
             raise AttributeError(name)
 
-    def __str__(self):
-        return pformat(self.__dict__)
+        def __str__(self):
+            return config_format_func(self)
 
-    def __repr__(self):
-        return self.__str__()
+        def __repr__(self):
+            return self.__str__()
+
+
+def config_format_func(config, prefix=""):
+    """
+    Args:
+        config: dict-like object
+    Returns:
+        formatted str
+    """
+    msg = ""
+    if prefix:
+        prefix += "."
+
+    for k, v in config.__dict__.items():
+        if isinstance(v, Config):
+            msg += config_format_func(v, prefix=str(k))
+        else:
+            msg += format(prefix + str(k), "<40") + format(str(v), "<") + "\n"
+    return msg
 
 
 def load_config(file_path):
@@ -51,7 +70,7 @@ def load_config(file_path):
         for base_yaml in base_yamls:
             if base_yaml.startswith("~"):
                 base_yaml = os.path.expanduser(base_yaml)
-            if not base_yaml.startswith('/'):
+            if not base_yaml.startswith("/"):
                 base_yaml = os.path.join(os.path.dirname(file_path), base_yaml)
 
             base_cfg_default, base_cfg_helper, base_cfg_choices = load_config(base_yaml)
@@ -60,9 +79,11 @@ def load_config(file_path):
             all_base_cfg_choices = merge_config(base_cfg_choices, all_base_cfg_choices)
 
         del cfg_default[BASE]
-        return merge_config(cfg_default, all_base_cfg_default), \
-               merge_config(cfg_helper, all_base_cfg_helper), \
-               merge_config(cfg_choices, all_base_cfg_choices)
+        return (
+            merge_config(cfg_default, all_base_cfg_default),
+            merge_config(cfg_helper, all_base_cfg_helper),
+            merge_config(cfg_choices, all_base_cfg_choices),
+        )
 
     return cfg_default, cfg_helper, cfg_choices
 
@@ -74,7 +95,7 @@ def parse_yaml(yaml_path):
     Args:
         yaml_path: Path to the yaml config.
     """
-    with open(yaml_path, 'r') as fin:
+    with open(yaml_path, "r") as fin:
         try:
             cfgs = yaml.load_all(fin.read(), Loader=yaml.FullLoader)
             cfgs = [x for x in cfgs]
@@ -98,8 +119,7 @@ def merge_config(config, base):
     """Merge config"""
     new = deepcopy(base)
     for k, v in config.items():
-        if (k in new and isinstance(new[k], dict) and
-                isinstance(config[k], collectionsAbc.Mapping)):
+        if k in new and isinstance(new[k], dict) and isinstance(config[k], collectionsAbc.Mapping):
             new[k] = merge_config(config[k], new[k])
         else:
             new[k] = config[k]
@@ -125,11 +145,13 @@ def parse_cli_to_yaml(parents, args_main, cfg, helper=None, choices=None, cfg_pa
             help_description = helper[item] if item in helper else "Please reference to {}".format(cfg_path)
             choice = choices[item] if item in choices else None
             if isinstance(cfg[item], bool):
-                parser.add_argument("--" + item, type=ast.literal_eval, default=cfg[item], choices=choice,
-                                    help=help_description)
+                parser.add_argument(
+                    "--" + item, type=ast.literal_eval, default=cfg[item], choices=choice, help=help_description
+                )
             else:
-                parser.add_argument("--" + item, type=type(cfg[item]), default=cfg[item], choices=choice,
-                                    help=help_description)
+                parser.add_argument(
+                    "--" + item, type=type(cfg[item]), default=cfg[item], choices=choice, help=help_description
+                )
     args = parser.parse_args(args_main)
     return args
 

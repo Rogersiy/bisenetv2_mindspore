@@ -11,27 +11,40 @@ def get_bn():
 
 
 class ConvModule(nn.Cell):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 bias=False,
-                 norm='none',
-                 act='none'):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=False,
+        norm="none",
+        act="none",
+    ):
         super(ConvModule, self).__init__()
         layers = []
-        layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, dilation=dilation,
-                                group=groups, pad_mode="pad", padding=padding, has_bias=bias,
-                                weight_init=HeUniform(math.sqrt(5))))
+        layers.append(
+            nn.Conv2d(
+                in_channels,
+                out_channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                dilation=dilation,
+                group=groups,
+                pad_mode="pad",
+                padding=padding,
+                has_bias=bias,
+                weight_init=HeUniform(math.sqrt(5)),
+            )
+        )
         if norm == "bn":
             layers.append(get_bn()(out_channels, eps=1e-4))
-        elif norm != 'none':
+        elif norm != "none":
             raise ValueError(f"not support norm: {norm}, you can set norm None or 'bn'")
-        if act != 'none':
+        if act != "none":
             layers.append(nn.get_activation(act))
         self.conv = nn.SequentialCell(layers)
 
@@ -52,19 +65,21 @@ class FCNHead(nn.Cell):
         dilation (int): The dilation rate for convs in the head. Default: 1.
     """
 
-    def __init__(self,
-                 in_channels,
-                 channels,
-                 out_channels=None,
-                 num_classes=2,
-                 num_convs=2,
-                 in_index=-1,
-                 kernel_size=3,
-                 concat_input=True,
-                 dilation=1,
-                 norm='none',
-                 act='relu',
-                 align_corners=None):
+    def __init__(
+        self,
+        in_channels,
+        channels,
+        out_channels=None,
+        num_classes=2,
+        num_convs=2,
+        in_index=-1,
+        kernel_size=3,
+        concat_input=True,
+        dilation=1,
+        norm="none",
+        act="relu",
+        align_corners=None,
+    ):
         super(FCNHead, self).__init__()
         if isinstance(in_channels, (list, tuple)):
             self.in_channels = sum(in_channels)
@@ -87,7 +102,9 @@ class FCNHead(nn.Cell):
                 padding=conv_padding,
                 dilation=dilation,
                 norm=norm,
-                act=act))
+                act=act,
+            )
+        )
         for i in range(num_convs - 1):
             convs.append(
                 ConvModule(
@@ -97,7 +114,9 @@ class FCNHead(nn.Cell):
                     padding=conv_padding,
                     dilation=dilation,
                     norm=norm,
-                    act=act))
+                    act=act,
+                )
+            )
         if num_convs == 0:
             self.convs = nn.Identity()
         else:
@@ -109,11 +128,13 @@ class FCNHead(nn.Cell):
                 kernel_size=kernel_size,
                 padding=kernel_size // 2,
                 norm=norm,
-                act=act)
+                act=act,
+            )
         if out_channels is None:
             out_channels = num_classes
-        self.conv_seg = nn.Conv2d(channels, out_channels, kernel_size=1,
-                                  weight_init=HeUniform(math.sqrt(5)), has_bias=True)
+        self.conv_seg = nn.Conv2d(
+            channels, out_channels, kernel_size=1, weight_init=HeUniform(math.sqrt(5)), has_bias=True
+        )
 
     def _forward_feature(self, inputs):
         """Forward function for feature maps before classifying each pixel with
@@ -129,7 +150,7 @@ class FCNHead(nn.Cell):
         upsampled_inputs = ()
         for idx in self.in_index:
             inp = inputs[idx]
-            inp = ops.interpolate(inp, size=inputs[0].shape[2:], mode='bilinear', align_corners=self.align_corners)
+            inp = ops.interpolate(inp, size=inputs[0].shape[2:], mode="bilinear", align_corners=self.align_corners)
             upsampled_inputs += (inp,)
 
         inputs = ops.concat(upsampled_inputs, axis=1)
@@ -143,3 +164,37 @@ class FCNHead(nn.Cell):
         output = self._forward_feature(inputs)
         output = self.conv_seg(output)
         return output
+
+
+class MultiScaleInfer(nn.Cell):
+    def __init__(self, net, num_classes=2, img_ratios=(1.0,), flip=False, multi_out=True):
+        super(MultiScaleInfer, self).__init__()
+        self.net = net
+        self.num_classes = num_classes
+        self.img_ratios = img_ratios
+        self.flip = flip
+        self.multi_out = multi_out
+
+    def construct(self, img):
+        n, c, h, w = img.shape
+        pred_res = ops.zeros((n, h, w, self.num_classes), ms.float32)
+        for r in self.img_ratios:
+            n_h, n_w = int(h * r), int(w * r)
+            n_img = ops.interpolate(img, size=(n_h, n_w), mode="bilinear")
+            pred = self.net(n_img)
+            if self.multi_out:
+                pred = pred[0]
+            pred = ops.interpolate(pred, size=(h, w), mode="bilinear")
+            pred = ops.softmax(pred.transpose(0, 2, 3, 1), -1)
+            pred_res += pred
+            if self.flip:
+                n_img = n_img[:, :, :, ::-1]
+                pred = self.net(n_img)
+                if self.multi_out:
+                    pred = pred[0]
+                pred = pred[:, :, :, ::-1]
+                pred = ops.interpolate(pred, size=(h, w), mode="bilinear")
+                pred = ops.softmax(pred.transpose(0, 2, 3, 1), -1)
+                pred_res += pred
+        pred_res = ops.argmax(pred_res, -1)
+        return pred_res

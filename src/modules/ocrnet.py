@@ -57,10 +57,24 @@ class SelfAttentionBlock(nn.Cell):
         act_cfg (dict|None): Config of activation layers.
     """
 
-    def __init__(self, key_in_channels, query_in_channels, channels,
-                 out_channels, share_key_query, query_downsample,
-                 key_downsample, key_query_num_convs, value_out_num_convs,
-                 key_query_norm, value_out_norm, matmul_norm, with_out, norm, act):
+    def __init__(
+        self,
+        key_in_channels,
+        query_in_channels,
+        channels,
+        out_channels,
+        share_key_query,
+        query_downsample,
+        key_downsample,
+        key_query_num_convs,
+        value_out_num_convs,
+        key_query_norm,
+        value_out_norm,
+        matmul_norm,
+        with_out,
+        norm,
+        act,
+    ):
         super().__init__()
         if share_key_query:
             assert key_in_channels == query_in_channels
@@ -72,12 +86,8 @@ class SelfAttentionBlock(nn.Cell):
         self.norm = norm
         self.act = act
         self.key_project = self.build_project(
-            key_in_channels,
-            channels,
-            num_convs=key_query_num_convs,
-            use_conv_module=key_query_norm,
-            norm=norm,
-            act=act)
+            key_in_channels, channels, num_convs=key_query_num_convs, use_conv_module=key_query_norm, norm=norm, act=act
+        )
         if share_key_query:
             self.query_project = self.key_project
         else:
@@ -87,14 +97,16 @@ class SelfAttentionBlock(nn.Cell):
                 num_convs=key_query_num_convs,
                 use_conv_module=key_query_norm,
                 norm=norm,
-                act=act)
+                act=act,
+            )
         self.value_project = self.build_project(
             key_in_channels,
             channels if with_out else out_channels,
             num_convs=value_out_num_convs,
             use_conv_module=value_out_norm,
             norm=norm,
-            act=act)
+            act=act,
+        )
         if with_out:
             self.out_project = self.build_project(
                 channels,
@@ -102,7 +114,8 @@ class SelfAttentionBlock(nn.Cell):
                 num_convs=value_out_num_convs,
                 use_conv_module=value_out_norm,
                 norm=norm,
-                act=act)
+                act=act,
+            )
         else:
             self.out_project = None
 
@@ -113,22 +126,9 @@ class SelfAttentionBlock(nn.Cell):
     def build_project(self, in_channels, channels, num_convs, use_conv_module, norm, act):
         """Build projection layer for key/query/value/out."""
         if use_conv_module:
-            convs = [
-                ConvModule(
-                    in_channels,
-                    channels,
-                    1,
-                    norm=norm,
-                    act=act)
-            ]
+            convs = [ConvModule(in_channels, channels, 1, norm=norm, act=act)]
             for _ in range(num_convs - 1):
-                convs.append(
-                    ConvModule(
-                        channels,
-                        channels,
-                        1,
-                        norm=norm,
-                        act=act))
+                convs.append(ConvModule(channels, channels, 1, norm=norm, act=act))
         else:
             convs = [nn.Conv2d(in_channels, channels, 1, weight_init=HeUniform(math.sqrt(5)))]
             for _ in range(num_convs - 1):
@@ -159,7 +159,7 @@ class SelfAttentionBlock(nn.Cell):
 
         sim_map = ops.matmul(query, key)
         if self.matmul_norm:
-            sim_map = (self.channels**-.5) * sim_map
+            sim_map = (self.channels**-0.5) * sim_map
         sim_map = ops.softmax(sim_map, axis=-1)
 
         context = ops.matmul(sim_map, value)
@@ -194,14 +194,9 @@ class ObjectAttentionBlock(nn.Cell):
             matmul_norm=True,
             with_out=True,
             norm=norm,
-            act=act)
-        self.bottleneck = ConvModule(
-            in_channels * 2,
-            channels,
-            3,
-            padding=1,
-            norm=norm,
-            act=act)
+            act=act,
+        )
+        self.bottleneck = ConvModule(in_channels * 2, channels, 3, padding=1, norm=norm, act=act)
 
     def construct(self, query_feats, key_feats):
         """Forward function."""
@@ -222,8 +217,19 @@ class OCRHead(nn.Cell):
             Default: 1.
     """
 
-    def __init__(self, channels, in_channels, ocr_channels, out_channels=None, in_index=(0, 1, 2, 3), num_classes=2,
-                 scale=1, align_corners=None, norm='none', act='relu'):
+    def __init__(
+        self,
+        channels,
+        in_channels,
+        ocr_channels,
+        out_channels=None,
+        in_index=(0, 1, 2, 3),
+        num_classes=2,
+        scale=1,
+        align_corners=None,
+        norm="none",
+        act="relu",
+    ):
         super(OCRHead, self).__init__()
         if isinstance(in_channels, (list, tuple)):
             self.in_channels = sum(in_channels)
@@ -231,25 +237,15 @@ class OCRHead(nn.Cell):
             self.in_channels = in_channels
         self.ocr_channels = ocr_channels
         self.scale = scale
-        self.object_context_block = ObjectAttentionBlock(
-            channels,
-            self.ocr_channels,
-            self.scale,
-            norm=norm,
-            act=act)
+        self.object_context_block = ObjectAttentionBlock(channels, self.ocr_channels, self.scale, norm=norm, act=act)
         self.spatial_gather_module = SpatialGatherModule(self.scale)
 
-        self.bottleneck = ConvModule(
-            self.in_channels,
-            channels,
-            3,
-            padding=1,
-            norm=norm,
-            act=act)
+        self.bottleneck = ConvModule(self.in_channels, channels, 3, padding=1, norm=norm, act=act)
         if out_channels is None:
             self.out_channels = num_classes
-        self.conv_seg = nn.Conv2d(ocr_channels, self.out_channels, kernel_size=1,
-                                  weight_init=HeUniform(math.sqrt(5)), has_bias=True)
+        self.conv_seg = nn.Conv2d(
+            ocr_channels, self.out_channels, kernel_size=1, weight_init=HeUniform(math.sqrt(5)), has_bias=True
+        )
         self.in_index = in_index
         self.align_corners = align_corners
 
@@ -267,7 +263,7 @@ class OCRHead(nn.Cell):
         upsampled_inputs = ()
         for idx in self.in_index:
             inp = inputs[idx]
-            inp = ops.interpolate(inp, size=inputs[0].shape[2:], mode='bilinear', align_corners=self.align_corners)
+            inp = ops.interpolate(inp, size=inputs[0].shape[2:], mode="bilinear", align_corners=self.align_corners)
             upsampled_inputs += (inp,)
 
         inputs = ops.concat(upsampled_inputs, axis=1)
@@ -287,29 +283,35 @@ class OCRHead(nn.Cell):
 class OCRNet(nn.Cell):
     def __init__(self, cfg):
         super(OCRNet, self).__init__()
-        self.backbone = create_backbone(initializer=cfg.backbone.initializer,
-                                        in_channels=cfg.backbone.in_channels,
-                                        pretrained=cfg.backbone.pretrained,
-                                        backbone_ckpt=cfg.backbone.backbone_ckpt,)
-        self.fcn_head = FCNHead(in_channels=cfg.fcn_head.in_channels,
-                                channels=cfg.fcn_head.channels,
-                                num_classes=cfg.num_classes,
-                                kernel_size=cfg.fcn_head.kernel_size,
-                                num_convs=cfg.fcn_head.num_convs,
-                                concat_input=cfg.fcn_head.concat_input,
-                                in_index=cfg.fcn_head.in_index,
-                                norm=cfg.fcn_head.norm,
-                                act=cfg.fcn_head.act)
-        self.ocr_head = OCRHead(in_channels=cfg.ocr_head.in_channels,
-                                channels=cfg.ocr_head.channels,
-                                num_classes=cfg.num_classes,
-                                in_index=cfg.ocr_head.in_index,
-                                ocr_channels=cfg.ocr_head.ocr_channels,
-                                norm=cfg.ocr_head.norm,
-                                act=cfg.ocr_head.act)
+        self.backbone = create_backbone(
+            initializer=cfg.backbone.initializer,
+            in_channels=cfg.backbone.in_channels,
+            pretrained=cfg.backbone.pretrained,
+            backbone_ckpt=cfg.backbone.backbone_ckpt,
+        )
+        self.fcn_head = FCNHead(
+            in_channels=cfg.fcn_head.in_channels,
+            channels=cfg.fcn_head.channels,
+            num_classes=cfg.num_classes,
+            kernel_size=cfg.fcn_head.kernel_size,
+            num_convs=cfg.fcn_head.num_convs,
+            concat_input=cfg.fcn_head.concat_input,
+            in_index=cfg.fcn_head.in_index,
+            norm=cfg.fcn_head.norm,
+            act=cfg.fcn_head.act,
+        )
+        self.ocr_head = OCRHead(
+            in_channels=cfg.ocr_head.in_channels,
+            channels=cfg.ocr_head.channels,
+            num_classes=cfg.num_classes,
+            in_index=cfg.ocr_head.in_index,
+            ocr_channels=cfg.ocr_head.ocr_channels,
+            norm=cfg.ocr_head.norm,
+            act=cfg.ocr_head.act,
+        )
 
     def construct(self, img):
-        feats = self.backbone(img)
+        feats = self.backbone.forward_features(img)
         fcn_out = self.fcn_head(feats)
         ocr_out = self.ocr_head(feats, fcn_out)
         return ocr_out, fcn_out

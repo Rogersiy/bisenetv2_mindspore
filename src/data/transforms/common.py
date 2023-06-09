@@ -1,11 +1,12 @@
 import cv2
 import numpy as np
 
-__all__ = ['RandomFlip', 'RandomColor', 'RandomHSV', 'Normalize', 'TransposeImage']
+__all__ = ["RandomFlip", "RandomColor", "RandomHSV", "Normalize", "TransposeImage"]
 
 
 class RandomFlip:
-    """Random left_right flip
+    """
+    Random left_right flip
     Args:
         prob (float): the probability of flipping image
     """
@@ -26,7 +27,13 @@ class RandomFlip:
 class RandomColor:
     """
     Randomly adjust the brightness, contrast, saturation, and hue of the input image.
+    Args:
+        brightness_delta (int): delta of brightness.
+        contrast_range (tuple): range of contrast.
+        saturation_range (tuple): range of saturation.
+        hue_delta (int): delta of hue.
     """
+
     def __init__(self, brightness_delta=32, contrast_range=(0.5, 1.5), saturation_range=(0.5, 1.5), hue_delta=18):
         self.brightness_delta = brightness_delta
         self.contrast_range = contrast_range
@@ -47,8 +54,7 @@ class RandomColor:
         hue_r = np.random.random() < 0.5
 
         if brightness_r:
-            img = self.convert(img, beta=np.random.uniform(-self.brightness_delta,
-                                                           self.brightness_delta))
+            img = self.convert(img, beta=np.random.uniform(-self.brightness_delta, self.brightness_delta))
         mode = np.random.randint(2)
         # mode == 0 --> do random contrast first
         # mode == 1 --> do random contrast last
@@ -57,11 +63,11 @@ class RandomColor:
         if saturation_r or hue_r:
             img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             if saturation_r:
-                img_hsv[:, :, 1] = self.convert(img_hsv[:, :, 1],
-                                                alpha=np.random.uniform(*self.contrast_range))
+                img_hsv[:, :, 1] = self.convert(img_hsv[:, :, 1], alpha=np.random.uniform(*self.contrast_range))
             if hue_r:
-                img_hsv[:, :, 0] = (img_hsv[:, :, 0].astype(int) +
-                                    np.random.randint(-self.hue_delta, self.hue_delta)) % 180
+                img_hsv[:, :, 0] = (
+                    img_hsv[:, :, 0].astype(int) + np.random.randint(-self.hue_delta, self.hue_delta)
+                ) % 180
             img = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
         if mode == 0 and contrast_r:
             img = self.convert(img, alpha=np.random.uniform(*self.contrast_range))
@@ -72,6 +78,7 @@ class RandomHSV:
     """
     HSV color-space augmentation
     """
+
     def __init__(self, hgain=0.5, sgain=0.5, vgain=0.5):
         self.gains = [hgain, sgain, vgain]
 
@@ -92,24 +99,27 @@ class RandomHSV:
 
 class Normalize:
     """
+    Normalize the input image with respect to mean and standard deviation.
     Args:
         mean (list): the pixel mean
         std (list): the pixel variance
         is_scale (bool): scale the pixel to [0,1]
         norm_type (str): type in ['mean_std', 'none']
     """
-    def __init__(self, mean=None, std=None, is_scale=True, norm_type='mean_std'):
+
+    def __init__(self, mean=None, std=None, is_scale=True, norm_type="mean_std"):
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
         self.norm_type = norm_type
-        self.input_columns = ['image']
+        self.input_columns = ["image"]
 
-        if not (isinstance(self.is_scale, bool) and self.norm_type in ['mean_std', 'none']):
+        if not (isinstance(self.is_scale, bool) and self.norm_type in ["mean_std", "none"]):
             raise TypeError("{}: input type is invalid.".format(self))
         from functools import reduce
+
         if self.std and reduce(lambda x, y: x * y, self.std) == 0:
-            raise ValueError('{}: std is invalid!'.format(self))
+            raise ValueError("{}: std is invalid!".format(self))
 
     def __call__(self, img, label):
         """Normalize the image.
@@ -123,7 +133,7 @@ class Normalize:
             scale = 1.0 / 255.0
             img *= scale
 
-        if self.norm_type == 'mean_std':
+        if self.norm_type == "mean_std":
             mean = self.mean or img.mean((0, 1))
             mean = np.array(mean)[np.newaxis, np.newaxis, :]
             std = self.std or img.var((0, 1))
@@ -138,15 +148,16 @@ class Normalize:
 
 class TransposeImage:
     """
+    Normalize the input image with respect to mean and standard deviation.
     Args:
         bgr2rgb (bool): transpose image channel from BGR to RGB
         hwc2chw (bool): transpose image dim from (h, w, c) to (c, h, w)
     """
-    def __init__(self, bgr2rgb=True, hwc2chw=True, consider_poly=False):
 
+    def __init__(self, bgr2rgb=True, hwc2chw=True):
         self.bgr2rgb = bgr2rgb
         self.hwc2chw = hwc2chw
-        self.input_columns = ['image']
+        self.input_columns = ["image"]
 
         if not (isinstance(bgr2rgb, bool) and isinstance(hwc2chw, bool)):
             raise TypeError("{}: input type is invalid.".format(self))

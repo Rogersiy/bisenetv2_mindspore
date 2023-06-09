@@ -1,23 +1,9 @@
 import os
+from .local_adapter import get_device_num
 
 _global_sync_count = 0
 
-__all__ = ['sync_data']
-
-
-def get_device_id():
-    device_id = os.getenv('DEVICE_ID', '0')
-    return int(device_id)
-
-
-def get_device_num():
-    device_num = os.getenv('RANK_SIZE', '1')
-    return int(device_num)
-
-
-def get_rank_id():
-    global_rank_id = os.getenv('RANK_ID', '0')
-    return int(global_rank_id)
+__all__ = ["sync_data"]
 
 
 def sync_data(from_path, to_path):
@@ -27,6 +13,7 @@ def sync_data(from_path, to_path):
     """
     import moxing as mox
     import time
+
     global _global_sync_count
     sync_lock = "/tmp/copy_sync.lock" + str(_global_sync_count)
     _global_sync_count += 1

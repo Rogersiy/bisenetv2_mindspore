@@ -12,6 +12,7 @@ class WithLossCell(nn.Cell):
     Args:
         backbone (Cell): The backbone network to wrap.
         loss_fn (Cell): The loss function used to compute loss.
+        loss_weight (list): weights for each loss_fn
 
     Inputs:
         - **data** (Tensor) - Tensor of shape :math:`(N, \ldots)`.
@@ -20,6 +21,7 @@ class WithLossCell(nn.Cell):
     Outputs:
         Tensor, a tensor means the loss value, the shape of which is usually :math:`()`.
     """
+
     def __init__(self, net, loss_fn, loss_weight):
         super(WithLossCell, self).__init__(auto_prefix=False)
         self.net = net
