@@ -1,5 +1,5 @@
 data:
-  dataset_dir: "../cityscapes"
+  dataset_dir: "Cityscapes"
   name: "cityscapes"
   num_parallel_workers: 8
   map_label: [0.8373, 0.918, 0.866, 1.0345,
