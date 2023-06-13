@@ -5,6 +5,7 @@ import traceback
 import numpy as np
 import mindspore as ms
 from mindspore import nn
+from mindspore import load_checkpoint,load_param_into_net
 
 # from src.modules.ocrnet import OCRNet
 from src.modules.loss import WithLossCell, CrossEntropy
@@ -136,6 +137,10 @@ if __name__ == "__main__":
 
     # Network
     network=BiSeNetV2(n_classes=19,aux_mode='train', backbone_url='')
+    weight_pth=os.path.join(pretrain_dir, "finetune500epoch.ckpt")
+    param_dict = load_checkpoint(weight_pth)
+    load_param_into_net(net, param_dict)
+    print('load pretrain finished',weight_pth)
     eval_network=BiSeNetV2(n_classes=19,aux_mode='eval', backbone_url='')
     # network = OCRNet(config)
     if config.mix:
