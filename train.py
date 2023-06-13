@@ -141,7 +141,7 @@ if __name__ == "__main__":
     network=BiSeNetV2(n_classes=19,aux_mode='train', backbone_url='')
     weight_pth=os.path.join(config.ckpt_dir, "finetune500epoch.ckpt")
     param_dict = load_checkpoint(weight_pth)
-    load_param_into_net(net, param_dict)
+    load_param_into_net(network, param_dict)
     print('load pretrain finished',weight_pth)
     eval_network=BiSeNetV2(n_classes=19,aux_mode='eval', backbone_url='')
     # network = OCRNet(config)
