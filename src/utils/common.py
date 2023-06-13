@@ -93,8 +93,9 @@ def init_env(cfg):
         sync_data(cfg.data_url, cfg.data_dir)
         sync_data(cfg.save_dir, cfg.train_url)
 
-        if cfg.ckpt_url:
-            sync_data(cfg.ckpt_url, cfg.ckpt_dir)  # pretrain ckpt
+        if cfg.pretrain_url:
+            os.makedirs(cfg.ckpt_dir, exist_ok=True)
+            sync_data(cfg.pretrain_url, cfg.ckpt_dir)  # pretrain ckpt
         cfg.data.dataset_dir = os.path.join(cfg.data_dir, cfg.data.dataset_dir)
         # cfg.pre_trained_ckpt = os.path.join(cfg.ckpt_dir, cfg.pre_trained_ema_ckpt) if cfg.pre_trained_ema_ckpt else ""
         # cfg.pre_trained_ema_ckpt = (
