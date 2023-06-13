@@ -1,5 +1,5 @@
 import os
-from .local_adapter import get_device_num
+from .local_adapter import get_device_num,get_device_id
 
 _global_sync_count = 0
 
