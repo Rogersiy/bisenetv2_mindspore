@@ -51,7 +51,9 @@ def get_args_train(parents=None):
     parser.add_argument("--enable_modelarts", type=ast.literal_eval, default=False, help="enable modelarts")
     parser.add_argument("--data_url", type=str, default="", help="ModelArts: obs path to dataset folder")
     parser.add_argument("--ckpt_url", type=str, default="", help="ModelArts: obs path to dataset folder")
+    parser.add_argument("--pretrain_url", type=str, default="", help="ModelArts: obs path to dataset folder")
     parser.add_argument("--train_url", type=str, default="", help="ModelArts: obs path to dataset folder")
+    parser.add_argument("--ckpt_dir", type=str, default="/cache/ckpt", help="ModelArts: obs path to dataset folder")
     parser.add_argument("--data_dir", type=str, default="/cache/data", help="ModelArts: obs path to dataset folder")
     args, _ = parser.parse_known_args()
     return args
@@ -137,7 +139,7 @@ if __name__ == "__main__":
 
     # Network
     network=BiSeNetV2(n_classes=19,aux_mode='train', backbone_url='')
-    weight_pth=os.path.join(pretrain_dir, "finetune500epoch.ckpt")
+    weight_pth=os.path.join(config.ckpt_dir, "finetune500epoch.ckpt")
     param_dict = load_checkpoint(weight_pth)
     load_param_into_net(net, param_dict)
     print('load pretrain finished',weight_pth)
