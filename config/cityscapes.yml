@@ -13,7 +13,7 @@ data:
       - RandomResizeCrop: { crop_size: [512, 1024], multi_scale: True, base_size: 2048, ignore_label: 255}
       - RandomFlip: { prob: 0.5 }
       - RandomColor: { contrast_range: [0.4, 1.6] }
-      - Normalize: { is_scale: True, norm_type: 'mean_std', mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225] }
+      - Normalize: { is_scale: True, norm_type: 'mean_std', mean: [0.3257, 0.3690, 0.3223], std: [0.2112, 0.2148, 0.2115] }
       - TransposeImage: { hwc2chw: True }
 
   eval_transforms:
@@ -22,5 +22,5 @@ data:
     flip: True
     item_transforms:
       - Resize: { target_size: [1024, 2048], keep_ratio: True, ignore_label: 255 }
-      - Normalize: { is_scale: True, norm_type: 'mean_std', mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225] }
+      - Normalize: { is_scale: True, norm_type: 'mean_std',  mean: [0.3257, 0.3690, 0.3223], std: [0.2112, 0.2148, 0.2115] }
       - TransposeImage: { hwc2chw: True }
