@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
     # Optimizer
     # lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
-    lr = warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step)
+    lr = ms.Tensor(warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step),dtype=ms.float32)
     optimizer = get_optimizer(config.optimizer, net_with_loss.trainable_params(), lr)
     scale_sense = nn.FixedLossScaleUpdateCell(1.0)
     if config.ms_loss_scaler == "dynamic":
