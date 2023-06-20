@@ -1,0 +1,6 @@
+__BASE__: [
+  '../cityscapes.yml',
+  '../optimizer_16k.yml',
+]
+net: BiSeNetV2
+num_classes: 19

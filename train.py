@@ -23,7 +23,7 @@ def get_args_train(parents=None):
     parser.add_argument(
         "--config",
         type=str,
-        default=os.path.join(current_dir, "config/ocrnet/config_ocrnet_hrw48_16k.yml"),
+        default=os.path.join(current_dir, "config/bisenetv2/config_bisenetv2_16k.yml"),
         help="Config file path",
     )
     parser.add_argument("--seed", type=int, default=1234, help="runtime seed")
@@ -34,7 +34,7 @@ def get_args_train(parents=None):
     parser.add_argument("--ms_loss_scaler_value", type=float, default=256.0, help="static loss scale value")
     parser.add_argument("--device_target", type=str, default="Ascend", help="device target, Ascend/GPU/CPU")
     parser.add_argument("--resume_ckpt", type=str, default="", help="pre trained weights path")
-    parser.add_argument("--batch_size", type=int, default=2, help="total batch size for all device")
+    parser.add_argument("--batch_size", type=int, default=16, help="total batch size for all device")
     parser.add_argument("--mix", type=ast.literal_eval, default=True, help="Mix Precision")
     parser.add_argument("--run_eval", type=ast.literal_eval, default=True, help="run eval")
     parser.add_argument("--clip_grad", type=ast.literal_eval, default=False, help="clip grad")
@@ -51,7 +51,6 @@ def get_args_train(parents=None):
     parser.add_argument("--enable_modelarts", type=ast.literal_eval, default=False, help="enable modelarts")
     parser.add_argument("--data_url", type=str, default="", help="ModelArts: obs path to dataset folder")
     parser.add_argument("--ckpt_url", type=str, default="", help="ModelArts: obs path to dataset folder")
-    parser.add_argument("--pretrain_url", type=str, default="", help="ModelArts: obs path to dataset folder")
     parser.add_argument("--train_url", type=str, default="", help="ModelArts: obs path to dataset folder")
     parser.add_argument("--ckpt_dir", type=str, default="/cache/ckpt", help="ModelArts: obs path to dataset folder")
     parser.add_argument("--data_dir", type=str, default="/cache/data", help="ModelArts: obs path to dataset folder")
@@ -59,18 +58,29 @@ def get_args_train(parents=None):
     return args
 
 
-def get_lr(lr_init, end_lr, warmup_step, total_step):
-    assert warmup_step < total_step
-    w_r = (lr_init - end_lr) / warmup_step
-    d_r = (lr_init - end_lr) / (total_step - warmup_step)
-    lrs = []
-    for i in range(total_step):
-        if i < warmup_step:
-            lrs.append(end_lr + i * w_r)
-        else:
-            lrs.append(lr_init - ((i - warmup_step) * d_r))
-    return np.array(lrs, np.float32)
+# def get_lr(lr_init, end_lr, warmup_step, total_step):
+#     assert warmup_step < total_step
+#     w_r = (lr_init - end_lr) / warmup_step
+#     d_r = (lr_init - end_lr) / (total_step - warmup_step)
+#     lrs = []
+#     for i in range(total_step):
+#         if i < warmup_step:
+#             lrs.append(end_lr + i * w_r)
+#         else:
+#             lrs.append(lr_init - ((i - warmup_step) * d_r))
+#     return np.array(lrs, np.float32)
 
+def warmup_polydecay(base_lr, target_lr, warmup_iters, total_iters, factor=0.9):
+    diff_lr = base_lr - target_lr
+    lrs = []
+    for it in range( total_iters):
+        if it <= warmup_iters:
+            warmup_percent = min(it, warmup_iters) / warmup_iters
+            lrs.append(base_lr * warmup_percent)
+        else:
+            poly_rate = (1.0 - it / (total_iters - warmup_iters)) ** factor
+            lrs.append(diff_lr * poly_rate + target_lr)
+    return np.array(lrs, np.float32)
 
 def get_optimizer(cfg, params, lr):
     def init_group_params(params, weight_decay):
@@ -139,10 +149,6 @@ if __name__ == "__main__":
 
     # Network
     network=BiSeNetV2(n_classes=19,aux_mode='train', backbone_url='')
-    weight_pth=os.path.join(config.ckpt_dir, "finetune500epoch.ckpt")
-    param_dict = load_checkpoint(weight_pth)
-    load_param_into_net(network, param_dict)
-    print('load pretrain finished',weight_pth)
     eval_network=BiSeNetV2(n_classes=19,aux_mode='eval', backbone_url='')
     # network = OCRNet(config)
     if config.mix:
@@ -173,7 +179,8 @@ if __name__ == "__main__":
     net_with_loss = WithLossCell(network, loss_fn, config.loss_weight)
 
     # Optimizer
-    lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
+    # lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
+    lr = warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step)
     optimizer = get_optimizer(config.optimizer, net_with_loss.trainable_params(), lr)
     scale_sense = nn.FixedLossScaleUpdateCell(1.0)
     if config.ms_loss_scaler == "dynamic":
