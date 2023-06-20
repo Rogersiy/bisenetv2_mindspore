@@ -4,3 +4,4 @@ __BASE__: [
 ]
 net: BiSeNetV2
 num_classes: 19
+loss_weight: [1.0, 0.4]
