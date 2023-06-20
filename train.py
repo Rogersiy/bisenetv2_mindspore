@@ -80,7 +80,7 @@ def warmup_polydecay(base_lr, target_lr, warmup_iters, total_iters, factor=0.9):
         else:
             poly_rate = (1.0 - it / (total_iters - warmup_iters)) ** factor
             lrs.append(diff_lr * poly_rate + target_lr)
-    return np.array(lrs, np.float32)
+    return lrs
 
 def get_optimizer(cfg, params, lr):
     def init_group_params(params, weight_decay):
