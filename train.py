@@ -168,7 +168,7 @@ if __name__ == "__main__":
             config.data,
             batch_size=1,
             task="eval",
-            num_parallel_workers=max(1, config.data.num_parallel_workers // 2),
+            num_parallel_workers=8,
             group_size=1,
             rank=0,
         )
@@ -180,7 +180,8 @@ if __name__ == "__main__":
 
     # Optimizer
     # lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
-    lr = ms.Tensor(warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step),dtype=ms.float32)
+    # lr = ms.Tensor(warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step),dtype=ms.float32)
+    lr = nn.polynomial_decay_lr(learning_rate=0.05,end_learning_rate=0.0,total_step=config.total_step,step_per_epoch=1,decay_epoch=config.total_step,power=0.9)
     optimizer = get_optimizer(config.optimizer, net_with_loss.trainable_params(), lr)
     scale_sense = nn.FixedLossScaleUpdateCell(1.0)
     if config.ms_loss_scaler == "dynamic":
