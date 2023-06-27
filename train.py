@@ -117,7 +117,7 @@ def train(cfg, train_net, dataset, eval_net, eval_dataset=None):
         epochs,
         dataset,
         callbacks=Callback(cfg, train_net, optimizer, eval_net, eval_dataset),
-        dataset_sink_mode=True,
+        dataset_sink_mode=False,
         sink_size=cfg.log_interval,
     )
     if cfg.enable_modelarts:
