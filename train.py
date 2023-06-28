@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     # Network
     network=BiSeNetV2(n_classes=19,aux_mode='train', backbone_url='')
-    eval_network=BiSeNetV2(n_classes=19,aux_mode='eval', backbone_url='')
+    # eval_network=BiSeNetV2(n_classes=19,aux_mode='eval', backbone_url='')
     # network = OCRNet(config)
     if config.mix:
         network.to_float(ms.float16)
@@ -158,11 +158,11 @@ if __name__ == "__main__":
         from src.modules.base_modules import MultiScaleInfer
 
         eval_net = MultiScaleInfer(
-            eval_network,
+            network,
             num_classes=config.num_classes,
             img_ratios=(1.0,),
             flip=False,
-            multi_out=len(config.loss_weight) > 1,
+            multi_out=True,
         )
         eval_dataloader, _ = create_dataset(
             config.data,
