@@ -180,11 +180,11 @@ class MultiScaleInfer(nn.Cell):
         pred_res = ops.zeros((n, h, w, self.num_classes), ms.float32)
         for r in self.img_ratios:
             n_h, n_w = int(h * r), int(w * r)
-            n_img = ops.interpolate(img, size=(n_h, n_w), mode="bilinear")
+            n_img = ops.interpolate(img, sizes=(n_h, n_w), mode="bilinear")
             pred = self.net(n_img)
             if self.multi_out:
                 pred = pred[0]
-            pred = ops.interpolate(pred, size=(h, w), mode="bilinear")
+            pred = ops.interpolate(pred, sizes=(h, w), mode="bilinear")
             pred = ops.softmax(pred.transpose(0, 2, 3, 1), -1)
             pred_res += pred
             if self.flip:
