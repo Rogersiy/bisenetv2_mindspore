@@ -70,6 +70,13 @@ def get_args_train(parents=None):
 #             lrs.append(lr_init - ((i - warmup_step) * d_r))
 #     return np.array(lrs, np.float32)
 
+def get_lr(lr_init, end_lr, total_step, power):
+    lrs = []
+    for i in range(total_step):
+        lr= (lr_init-end_lr)*(1-i/total_step)**power+end_lr
+        lrs.append(lr)
+    return np.array(lrs, np.float32)
+
 def warmup_polydecay(base_lr, target_lr, warmup_iters, total_iters, factor=0.9):
     diff_lr = base_lr - target_lr
     lrs = []
@@ -182,13 +189,15 @@ if __name__ == "__main__":
     # lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
     # lr = ms.Tensor(warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step),dtype=ms.float32)
     print('total step ', config.total_step)
-    lr = nn.polynomial_decay_lr(
-        learning_rate=0.05,
-        end_learning_rate=0.0,
-        total_step=config.total_step,
-        step_per_epoch=1,
-        decay_epoch=config.total_step,
-        power=0.9)
+    # lr = nn.polynomial_decay_lr(
+    #     learning_rate=0.05,
+    #     end_learning_rate=0.0,
+    #     total_step=config.total_step,
+    #     step_per_epoch=1,
+    #     decay_epoch=config.total_step,
+    #     power=0.9)
+    lr = get_lr(lr_init = 0.05, end_lr = 0.0, total_step = 160000, power = 0.9)
+
     print('lr test: 100-110',lr[100:110])
     print('lr test: 86100 ',lr[86100])
     optimizer = get_optimizer(config.optimizer, net_with_loss.trainable_params(), lr)
