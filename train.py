@@ -181,7 +181,7 @@ if __name__ == "__main__":
     # Optimizer
     # lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
     # lr = ms.Tensor(warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step),dtype=ms.float32)
-    print('total step ' config.total_step)
+    print('total step ', config.total_step)
     lr = nn.polynomial_decay_lr(
         learning_rate=0.05,
         end_learning_rate=0.0,
