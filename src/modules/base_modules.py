@@ -150,7 +150,7 @@ class FCNHead(nn.Cell):
         upsampled_inputs = ()
         for idx in self.in_index:
             inp = inputs[idx]
-            inp = ops.interpolate(inp, size=inputs[0].shape[2:], mode="bilinear", align_corners=self.align_corners)
+            inp = ops.interpolate(inp, sizes=inputs[0].shape[2:], mode="bilinear", align_corners=self.align_corners)
             upsampled_inputs += (inp,)
 
         inputs = ops.concat(upsampled_inputs, axis=1)
@@ -193,7 +193,7 @@ class MultiScaleInfer(nn.Cell):
                 if self.multi_out:
                     pred = pred[0]
                 pred = pred[:, :, :, ::-1]
-                pred = ops.interpolate(pred, size=(h, w), mode="bilinear")
+                pred = ops.interpolate(pred, sizes=(h, w), mode="bilinear")
                 pred = ops.softmax(pred.transpose(0, 2, 3, 1), -1)
                 pred_res += pred
         pred_res = ops.argmax(pred_res, -1)
