@@ -124,12 +124,11 @@ def train(cfg, train_net, dataset, eval_net, eval_dataset=None):
         epochs,
         dataset,
         callbacks=Callback(cfg, train_net, optimizer, eval_net, eval_dataset),
-        dataset_sink_mode=False,
+        dataset_sink_mode=True,
         sink_size=cfg.log_interval,
     )
     if cfg.enable_modelarts:
         from src.utils.modelarts import sync_data
-
         sync_data(cfg.save_dir, cfg.train_url)
 
 
