@@ -175,7 +175,7 @@ if __name__ == "__main__":
             config.data,
             batch_size=1,
             task="eval",
-            num_parallel_workers=8,
+            num_parallel_workers=max(1, config.data.num_parallel_workers // 2),
             group_size=1,
             rank=0,
         )
