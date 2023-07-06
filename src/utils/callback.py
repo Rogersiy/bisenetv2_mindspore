@@ -87,7 +87,7 @@ class Callback(ms.Callback):
             run_context.request_stop()
         if cur_step % 5000 == 0 and cur_step != 0:
             save_checkpoint(self.cfg, self.network, None, cur_step)
-            if self.cfg.run_eval and cur_step > self.cfg.total_step // 2:
+            if self.cfg.run_eval :
                 try:
                     self.run_eval()
                 except:
