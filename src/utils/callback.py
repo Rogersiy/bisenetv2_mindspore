@@ -77,7 +77,7 @@ class Callback(ms.Callback):
         logger.info(
             f"step {cur_step}/{self.cfg.total_step}, "
             f"loss: {loss.asnumpy():.4f}, "
-            f"cur_lr: {cur_lr:.4f}, "
+            f"cur_lr: {cur_lr:.6f}, "
             f"cost {((time.time() - self.epoch_start) / cb_params.batch_num) * 1000:.2f} ms"
         )
         epoch_num = cb_params.cur_epoch_num
