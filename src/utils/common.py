@@ -17,15 +17,15 @@ def save_checkpoint(cfg, network, optimizer=None, cur_step=0):
     ms.save_checkpoint(network, save_path)
     # if optimizer is not None:
     #     ms.save_checkpoint(optimizer, opt_path)
-    if cfg.enable_modelarts:
-        from src.utils.modelarts import sync_data
+    # if cfg.enable_modelarts:
+    #     from src.utils.modelarts import sync_data
 
-        sync_data(
-            save_path,
-            os.path.join(
-                cfg.train_url, "checkpoints", f"{cfg.net}_{cur_step}_rank{cfg.rank}.ckpt"
-            ),
-        )
+    #     sync_data(
+    #         save_path,
+    #         os.path.join(
+    #             cfg.train_url, "checkpoints", f"{cfg.net}_{cur_step}_rank{cfg.rank}.ckpt"
+    #         ),
+    #     )
         # sync_data(opt_path, os.path.join(cfg.train_url, "checkpoints", f"optimizer_rank{cfg.rank}.ckpt"))
 
 
