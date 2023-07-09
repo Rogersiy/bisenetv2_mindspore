@@ -195,7 +195,7 @@ if __name__ == "__main__":
     #     step_per_epoch=1,
     #     decay_epoch=config.total_step,
     #     power=0.9)
-    lr = get_lr(lr_init = 0.05, end_lr = 0.0, total_step = 160000, power = 0.9)
+    lr = get_lr(lr_init = 0.05, end_lr = 0.0, total_step = config.total_step, power = 0.9)
 
     print('lr test: 100-110',lr[100:110])
     print('lr test: 86100 ',lr[86100])
