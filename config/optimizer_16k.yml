@@ -5,4 +5,4 @@ optimizer:
   nesterov: False
   filter_bias_and_bn: True
 warmup_step: 1000
-total_step: 860000
+total_step: 86000
