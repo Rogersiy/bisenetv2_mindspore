@@ -85,7 +85,7 @@ class Callback(ms.Callback):
             self.profiler.stop()
             self.profiler.analyse()
             run_context.request_stop()
-        if cur_step % 4000 == 0 and cur_step != 0:
+        if cur_step % 2000 == 0 and cur_step != 0:
             save_checkpoint(self.cfg, self.network, None, cur_step)
             if self.cfg.run_eval :
                 try:
