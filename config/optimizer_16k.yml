@@ -3,6 +3,6 @@ optimizer:
   momentum: 0.9
   weight_decay: 0.0005
   nesterov: False
-  filter_bias_and_bn: True
+  filter_bias_and_bn: False
 warmup_step: 1000
-total_step: 86000
+total_step: 160000
