@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ using mindspore::kSuccess;
 using mindspore::MSTensor;
 using mindspore::dataset::Execute;
 
-DEFINE_string(gmindir_path, "./hrnet-v2-w48.mindir", "mindir path");
+DEFINE_string(gmindir_path, "./bisenetv2.mindir", "mindir path");
 DEFINE_string(gdataset_path, ".", "dataset path");
 DEFINE_int32(gdevice_id, 0, "device id");
 

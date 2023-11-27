@@ -1,5 +1,3 @@
-
-
 #!/bin/bash
 # Copyright 2023 Huawei Technologies Co., Ltd
 #
@@ -16,9 +14,30 @@
 # limitations under the License.
 # ============================================================================
 
-MINDSPORE_PATH="`pip show mindspore-ascend | grep Location | awk '{print $2"/mindspore"}' | xargs realpath`"
-if [[ ! $MINDSPORE_PATH ]];then
-    MINDSPORE_PATH="`pip show mindspore | grep Location | awk '{print $2"/mindspore"}' | xargs realpath`"
+if [ $# != 1 ]
+then
+    echo "Using: bash scripts/run_standalone_train.sh [SAVE_DIR]"
+    exit 1
 fi
-cmake . -DMINDSPORE_PATH=$MINDSPORE_PATH
-make
+
+
+
+get_real_path(){
+    if [ "${1:0:1}" == "/" ]; then
+        echo "$1"
+    else
+        echo "$(realpath -m $PWD/$1)"
+    fi
+}
+
+SAVE_DIR=$(get_real_path $1)
+
+if [ -d ${SAVE_DIR} ]; then
+  rm -rf ${SAVE_DIR}
+fi
+mkdir -p ${SAVE_DIR}
+
+
+env >${SAVE_DIR}/env.log
+
+python train.py --config config/bisenetv2/config_bisenetv2_16k.yml --batch_size 16 --device_target Ascend --save_dir $SAVE_DIR

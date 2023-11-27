@@ -1,8 +1,0 @@
-optimizer:
-  type: sgd
-  momentum: 0.9
-  weight_decay: 0.00004
-  nesterov: False
-  filter_bias_and_bn: True
-warmup_step: 200
-total_step: 160000

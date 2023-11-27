@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2023 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
 
 """Export checkpoint into mindir or air for 310 inference."""
 import argparse
-
+import ast
+import mindspore as ms
 import numpy as np
 from mindspore import Tensor, context, load_checkpoint, load_param_into_net, export
 
@@ -31,20 +32,20 @@ def main():
     parser.add_argument("--file_name", type=str, help="Output file name. ")
     parser.add_argument("--file_format", type=str, default="MINDIR",
                         choices=["AIR", "MINDIR"], help="Output file format. ")
+    parser.add_argument("--mix", type=ast.literal_eval, default=True, help="Mix Precision")
 
     args = parser.parse_args()
 
     context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target, device_id=args.device_id)
     
     net=BiSeNetV2(n_classes=19,aux_mode='eval', backbone_url='')
-    
-    params_dict = load_checkpoint(args.checkpoint_file)
-    load_param_into_net(net, params_dict)
-    net.set_train(False)
+    if args.mix:
+        net.to_float(ms.float16)
+    ms.load_checkpoint(args.checkpoint_file, net)
+
     height, width = 1024, 2048
     input_data = Tensor(np.zeros([1, 3, height, width], dtype=np.float32))
     export(net, input_data, file_name=args.file_name, file_format=args.file_format)
-
 
 if __name__ == "__main__":
     main()

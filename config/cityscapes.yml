@@ -10,10 +10,18 @@ data:
   ignore_label: 255
   train_transforms:
     item_transforms:
-      - RandomResizeCrop: { crop_size: [1024, 1024], multi_scale: True, base_size: 2048, ignore_label: 255}
+      - RandomResizeCrop: {
+      crop_size: [1024, 1024], 
+      multi_scale: True, 
+      base_size: 2048, 
+      ignore_label: 255}
       - RandomFlip: { prob: 0.5 }
       - RandomColor: { contrast_range: [0.4, 1.6] }
-      - Normalize: { is_scale: True, norm_type: 'mean_std', mean: [0.3257, 0.3690, 0.3223], std: [0.2112, 0.2148, 0.2115] }
+      - Normalize: { 
+      is_scale: True, 
+      norm_type: 'mean_std',
+      mean: [0.3257, 0.3690, 0.3223], 
+      std: [0.2112, 0.2148, 0.2115] }
       - TransposeImage: { hwc2chw: True }
 
   eval_transforms:

@@ -1,3 +1,18 @@
+# Copyright 2023 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
 import os
 import argparse
 import ast
@@ -28,7 +43,7 @@ def get_args_train(parents=None):
     )
     parser.add_argument("--seed", type=int, default=1234, help="runtime seed")
     parser.add_argument(
-        "--ms_mode", type=int, default=0, help="Running in GRAPH_MODE(0) or PYNATIVE_MODE(1) (default=0)"
+        "--ms_mode", type=int, default=1, help="Running in GRAPH_MODE(0) or PYNATIVE_MODE(1) (default=0)"
     )
     parser.add_argument("--ms_loss_scaler", type=str, default="static", help="train loss scaler, static/dynamic/none")
     parser.add_argument("--ms_loss_scaler_value", type=float, default=256.0, help="static loss scale value")
@@ -36,7 +51,7 @@ def get_args_train(parents=None):
     parser.add_argument("--resume_ckpt", type=str, default="", help="pre trained weights path")
     parser.add_argument("--batch_size", type=int, default=4, help="total batch size for all device")
     parser.add_argument("--mix", type=ast.literal_eval, default=True, help="Mix Precision")
-    parser.add_argument("--run_eval", type=ast.literal_eval, default=True, help="run eval")
+    parser.add_argument("--run_eval", type=ast.literal_eval, default=False, help="run eval")
     parser.add_argument("--clip_grad", type=ast.literal_eval, default=False, help="clip grad")
     parser.add_argument("--force_update", type=ast.literal_eval, default=False, help="force update")
     parser.add_argument("--eval_parallel", type=ast.literal_eval, default=True, help="run eval")
@@ -57,18 +72,6 @@ def get_args_train(parents=None):
     args, _ = parser.parse_known_args()
     return args
 
-
-# def get_lr(lr_init, end_lr, warmup_step, total_step):
-#     assert warmup_step < total_step
-#     w_r = (lr_init - end_lr) / warmup_step
-#     d_r = (lr_init - end_lr) / (total_step - warmup_step)
-#     lrs = []
-#     for i in range(total_step):
-#         if i < warmup_step:
-#             lrs.append(end_lr + i * w_r)
-#         else:
-#             lrs.append(lr_init - ((i - warmup_step) * d_r))
-#     return np.array(lrs, np.float32)
 
 def get_lr(lr_init, end_lr, total_step, power):
     lrs = []
@@ -155,8 +158,7 @@ if __name__ == "__main__":
 
     # Network
     network=BiSeNetV2(n_classes=19,aux_mode='train', backbone_url='')
-    # eval_network=BiSeNetV2(n_classes=19,aux_mode='eval', backbone_url='')
-    # network = OCRNet(config)
+
     if config.mix:
         network.to_float(ms.float16)
 
@@ -184,21 +186,9 @@ if __name__ == "__main__":
     ).to_float(ms.float32)
     net_with_loss = WithLossCell(network, loss_fn, config.loss_weight)
 
-    # Optimizer
-    # lr = get_lr(config.lr_init, 1e-6, config.warmup_step, config.total_step)
-    # lr = ms.Tensor(warmup_polydecay(config.lr_init,0.0,config.warmup_step,config.total_step),dtype=ms.float32)
-    # print('total step ', config.total_step)
-    # lr = nn.polynomial_decay_lr(
-    #     learning_rate=0.05,
-    #     end_learning_rate=0.0,
-    #     total_step=config.total_step,
-    #     step_per_epoch=1,
-    #     decay_epoch=config.total_step,
-    #     power=0.9)
+
     lr = get_lr(lr_init = 0.05, end_lr = 0.0, total_step = config.total_step, power = 0.9)
 
-    # print('lr test: 100-110',lr[100:110])
-    # print('lr test: 86100 ',lr[86100])
     optimizer = get_optimizer(config.optimizer, net_with_loss.trainable_params(), lr)
     scale_sense = nn.FixedLossScaleUpdateCell(1.0)
     if config.ms_loss_scaler == "dynamic":
